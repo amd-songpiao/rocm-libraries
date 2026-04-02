@@ -10,7 +10,8 @@
 namespace origami {
 
 /**
- * @brief calculate the work utilization which is the ratio of the useful problem volume to the total scheduled volume.
+ * @brief calculate the work utilization which is the ratio of the useful problem volume to the
+ * total scheduled volume.
  *
  * @param problem Problem description (M, N, K, etc.)
  * @param config Kernel configuration.
@@ -19,17 +20,21 @@ namespace origami {
 double calculate_work_utilization(const problem_t& problem, const config_t& config);
 
 /**
- * @brief calculate the output utilization which is the ratio of the useful problem volume to the total scheduled volume.
+ * @brief calculate the output utilization which is the ratio of the useful problem volume to the
+ * total scheduled volume.
  *
  * @param problem Problem description (M, N, K, etc.)
  * @param config Kernel configuration.
  * @param vector_elems elements in the vector.
  * @return double ratio of the useful problem volume to the total scheduled volume.
  */
-double calculate_output_utilization(const problem_t& problem, const config_t& config, size_t vector_elems);
+double calculate_output_utilization(const problem_t& problem,
+                                    const config_t& config,
+                                    size_t vector_elems);
 
 /**
- * @brief Computes the number of active compute units if there is only one wave and it is partial, Otherwise, returns hardware.N_CU
+ * @brief Computes the number of active compute units if there is only one wave and it is partial,
+ * Otherwise, returns hardware.N_CU
  *
  * @param problem Problem description (M, N, K, etc.)
  * @param hardware Hardware characteristics (@see origami::hardware_t)
@@ -37,7 +42,8 @@ double calculate_output_utilization(const problem_t& problem, const config_t& co
  * @param grid_selection Different algorithms to select the grid size for kernel execution.
  * @param max_cus maximum number of CU's
  * @param split split
- * @return tuple<size_t, size_t, size_t, size_t> tuple(num_wgs, num_active_cus, numWaves, splitFactor)
+ * @return tuple<size_t, size_t, size_t, size_t> tuple(num_wgs, num_active_cus, numWaves,
+ * splitFactor)
  */
 std::tuple<size_t, size_t, size_t, size_t> compute_cu_occupancy(const problem_t& problem,
                                                                 const hardware_t& hardware,
@@ -56,7 +62,8 @@ std::tuple<size_t, size_t, size_t, size_t> compute_cu_occupancy(const problem_t&
 double compute_mem_bw_from_occupancy(const hardware_t& hardware, size_t num_active_cus);
 
 /**
- * @brief This function rounds the number of elements up to the smallest value whose total size (given the element bit-width) is an exact multiple of a 128-byte memory transaction.
+ * @brief This function rounds the number of elements up to the smallest value whose total size
+ * (given the element bit-width) is an exact multiple of a 128-byte memory transaction.
  *
  * @param elements Macro tile dimension
  * @param element_size_bits size in bits
@@ -119,8 +126,8 @@ size_t compute_number_matrix_instructions(dim3_t mt, dim3_t mi);
  * @return double Latency in cycles.
  */
 double compute_cvt_overhead(const problem_t& problem,
-                                          const hardware_t& hardware,
-                                          const config_t& config);
+                            const hardware_t& hardware,
+                            const config_t& config);
 /**
  * @brief Compute the latency to process a single macro-tile for the given problem and hardware.
  *
@@ -213,7 +220,7 @@ double compute_tile_latency(const problem_t& problem,
  * @brief Computes the latency per K-complete macro-tile timestep.
  * A timestep is defined as the time it takes for one set of concurrent
  * K-complete output tiles to be computed on one or more CUs. Typically,
- * this is simply the time it takes for one CU to complete one K-complete 
+ * this is simply the time it takes for one CU to complete one K-complete
  * output tile.
  *
  * @param problem Problem description (M, N, K, etc.)
@@ -243,5 +250,27 @@ double compute_total_latency(const problem_t& problem,
                              const hardware_t& hardware,
                              const config_t& config,
                              size_t max_cus);
+
+/**
+ * @brief Extract Formocast intermediate features for a (problem, config) pair.
+ *
+ * Runs the Formocast simulation pipeline and returns a flat feature vector
+ * containing physics-informed metrics (cache hit rates, memory costs, compute
+ * costs, overheads). Useful for training ML-based ranking models.
+ *
+ * @param problem Problem description (M, N, K, etc.)
+ * @param hardware Hardware characteristics
+ * @param config Kernel configuration (must have tensile params and prediction_mode == simulation)
+ * @return std::vector<double> Feature vector, or empty vector if config is invalid
+ */
+std::vector<double> extract_formocast_features(const problem_t& problem,
+                                               const hardware_t& hardware,
+                                               const config_t& config);
+
+/**
+ * @brief Get the names of features returned by extract_formocast_features(), in order.
+ * @return std::vector<std::string> Feature names
+ */
+std::vector<std::string> formocast_feature_names();
 
 }  // namespace origami

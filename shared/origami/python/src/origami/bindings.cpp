@@ -27,8 +27,6 @@ NB_MODULE(origami, m) {
       .value("gfx1151", hardware_t::architecture_t::gfx1151)
       .export_values();
 
-
-      
   nanobind::enum_<origami::data_type_t>(m, "data_type_t")
       .value("Float", origami::data_type_t::Float)
       .value("ComplexFloat", origami::data_type_t::ComplexFloat)
@@ -120,9 +118,11 @@ NB_MODULE(origami, m) {
       .def_rw("swizzle_a", &origami::tensile_params_t::swizzle_a)
       .def_rw("swizzle_b", &origami::tensile_params_t::swizzle_b)
       .def_rw("workgroup_mapping_xcc", &origami::tensile_params_t::workgroup_mapping_xcc)
-      .def_rw("workgroup_mapping_xcc_group", &origami::tensile_params_t::workgroup_mapping_xcc_group)
+      .def_rw("workgroup_mapping_xcc_group",
+              &origami::tensile_params_t::workgroup_mapping_xcc_group)
       .def_rw("global_split_u_coalesced", &origami::tensile_params_t::global_split_u_coalesced)
-      .def_rw("global_split_u_wgm_round_robin", &origami::tensile_params_t::global_split_u_wgm_round_robin);
+      .def_rw("global_split_u_wgm_round_robin",
+              &origami::tensile_params_t::global_split_u_wgm_round_robin);
 
   nanobind::class_<origami::config_t>(m, "config_t")
       .def(nanobind::init<>())
@@ -149,13 +149,13 @@ NB_MODULE(origami, m) {
                &origami::config_t::tensile),
            nanobind::rv_policy::reference_internal,
            "Get mutable reference to Tensile params (initializes if not set)")
-      .def("has_tensile_params", &origami::config_t::has_tensile_params,
+      .def("has_tensile_params",
+           &origami::config_t::has_tensile_params,
            "Check if Tensile params are currently set")
-      .def("set_tensile_params",
-           [](origami::config_t& c, const origami::tensile_params_t& p) {
-             c.backend = p;
-           },
-           "Set Tensile params from a tensile_params_t object");
+      .def(
+          "set_tensile_params",
+          [](origami::config_t& c, const origami::tensile_params_t& p) { c.backend = p; },
+          "Set Tensile params from a tensile_params_t object");
 
   nanobind::class_<origami::workgroup_mapping_t>(m, "workgroup_mapping_t")
       .def(nanobind::init<>())
@@ -190,20 +190,22 @@ NB_MODULE(origami, m) {
 
   nanobind::class_<hardware_t>(m, "hardware_t")
       .def(nanobind::init<hardware_t::architecture_t,
-                          size_t,  // N_CU
-                          size_t,  // lds_capacity
-                          size_t,  // NUM_XCD
-                          double,  // mem1_perf_ratio
-                          double,  // mem2_perf_ratio
-                          double,  // mem3_perf_ratio
-                          size_t,  // L2_capacity
-                          double,  // compute_clock_ghz
-                          size_t,  // parallel_mi_cu
+                          size_t,                                 // N_CU
+                          size_t,                                 // lds_capacity
+                          size_t,                                 // NUM_XCD
+                          double,                                 // mem1_perf_ratio
+                          double,                                 // mem2_perf_ratio
+                          double,                                 // mem3_perf_ratio
+                          size_t,                                 // L2_capacity
+                          double,                                 // compute_clock_ghz
+                          size_t,                                 // parallel_mi_cu
                           std::tuple<double, double, double>>())  // mem_bw_per_wg_coefficients
       .def("print", &hardware_t::print)
-      .def("get_valid_matrix_instructions", &hardware_t::get_valid_matrix_instructions,
+      .def("get_valid_matrix_instructions",
+           &hardware_t::get_valid_matrix_instructions,
            "Get valid matrix instruction dimensions for a given datatype")
-      .def("get_recommended_matrix_instruction", &hardware_t::get_recommended_matrix_instruction,
+      .def("get_recommended_matrix_instruction",
+           &hardware_t::get_recommended_matrix_instruction,
            "Get recommended matrix instruction dimension (highest throughput) for a given datatype")
       .def_rw("N_CU", &hardware_t::N_CU)
       .def_rw("lds_capacity", &hardware_t::lds_capacity)
@@ -221,7 +223,7 @@ NB_MODULE(origami, m) {
         &hardware_t::get_hardware_for_device,
         "This gets a hardware object for a device.");
 
-  //Needs named arguments
+  // Needs named arguments
   m.def("get_hardware_for_arch",
         &hardware_t::get_hardware_for_arch,
         nanobind::arg("arch"),
@@ -231,10 +233,8 @@ NB_MODULE(origami, m) {
         nanobind::arg("compute_clock_khz"),
         "Create hardware object for a specific architecture with specified parameters.");
 
-  m.def("datatype_to_bits", 
-        &origami::datatype_to_bits, 
-        "Return the number of bits in a datatype");
-  
+  m.def("datatype_to_bits", &origami::datatype_to_bits, "Return the number of bits in a datatype");
+
   m.def("string_to_datatype",
         &origami::string_to_datatype,
         "Convert a string representation of a datatype into data_type_t enum");
@@ -255,25 +255,17 @@ NB_MODULE(origami, m) {
         &origami::select_workgroup_mapping,
         "Select best workgroup mapping");
 
-  m.def("select_staggerU",
-        &origami::select_staggerU,
-        "Select best staggerU parameters");
+  m.def("select_staggerU", &origami::select_staggerU, "Select best staggerU parameters");
 
-  m.def("rank_configs",
-        &origami::rank_configs,
-        "Rank configurations by performance");
+  m.def("rank_configs", &origami::rank_configs, "Rank configurations by performance");
 
   m.def("select_config_mnk",
         &origami::select_config_mnk,
         "Select best configuration for M,N,K dimensions");
 
-  m.def("select_topk_configs",
-        &origami::select_topk_configs,
-        "Select topk configurations");
+  m.def("select_topk_configs", &origami::select_topk_configs, "Select topk configurations");
 
-  m.def("compute_perf_gflops",
-        &origami::compute_perf_gflops,
-        "Compute performance in GFLOPS");
+  m.def("compute_perf_gflops", &origami::compute_perf_gflops, "Compute performance in GFLOPS");
 
   // StreamK functions
   m.def("select_reduction",
@@ -293,15 +285,9 @@ NB_MODULE(origami, m) {
   m.def("compute_mt_compute_latency",
         &origami::compute_mt_compute_latency,
         "Compute the latency to process a single macro-tile");
-  m.def("check_lds_capacity",
-        &origami::check_lds_capacity,
-        "Check if MT fits in LDS");
-  m.def("estimate_l2_hit",
-        &origami::estimate_l2_hit,
-        "Estimate L2 hit rate");
-  m.def("estimate_mall_hit",
-        &origami::estimate_mall_hit,
-        "Estimate MALL hit rate");
+  m.def("check_lds_capacity", &origami::check_lds_capacity, "Check if MT fits in LDS");
+  m.def("estimate_l2_hit", &origami::estimate_l2_hit, "Estimate L2 hit rate");
+  m.def("estimate_mall_hit", &origami::estimate_mall_hit, "Estimate MALL hit rate");
   m.def("compute_memory_latency",
         &origami::compute_memory_latency,
         "Compute memory latency per macro tile");
@@ -317,4 +303,11 @@ NB_MODULE(origami, m) {
         &origami::streamk::compute_number_of_output_tiles,
         "Compute number of output tiles");
 
+  // Formocast feature extraction for ML-based ranking
+  m.def("extract_formocast_features",
+        &origami::extract_formocast_features,
+        "Extract Formocast intermediate features as a flat vector for ML training");
+  m.def("formocast_feature_names",
+        &origami::formocast_feature_names,
+        "Get ordered names of features returned by extract_formocast_features");
 }

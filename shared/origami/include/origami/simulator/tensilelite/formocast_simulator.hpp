@@ -154,6 +154,12 @@ class Formocast {
     uint32_t LocalWriteConflictMultiplierB32;
     hardware_t::architecture_t architecture;
 
+    // DPM (Dynamic Power Management) calibration constants (per-platform).
+    // Set explicitly after archConstantMap(); not part of magic-byte blob.
+    double dpm_alpha = 0.0;
+    double dpm_beta  = 0.0;
+    double dpm_gamma = 0.0;
+
     void print() const {
       std::cout << "HardwareConstants:" << std::endl;
       std::cout << "  architecture:         "
@@ -194,6 +200,9 @@ class Formocast {
                 << std::endl;
       std::cout << "  LocalReadConflictMultiplierB32: " << LocalReadConflictMultiplierB32
                 << std::endl;
+      std::cout << "  dpm_alpha:                " << dpm_alpha << std::endl;
+      std::cout << "  dpm_beta:                 " << dpm_beta << std::endl;
+      std::cout << "  dpm_gamma:                " << dpm_gamma << std::endl;
     };
   };
 

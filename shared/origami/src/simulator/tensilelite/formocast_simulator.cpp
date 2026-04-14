@@ -59,10 +59,7 @@ double Formocast::getLoopOverall(const MemoryAccessCosts& mem,
 }
 
 Formocast::HardwareConstants archConstantMap(const unsigned char* magic, size_t magicSize) {
-  Formocast::HardwareConstants hw;
-  if (magicSize != sizeof(Formocast::HardwareConstants)) {
-    std::cerr << "Error: magic number size does not match HardwareConstants size!" << std::endl;
-  }
+  Formocast::HardwareConstants hw{};
   std::memcpy(&hw, magic, std::min(magicSize, sizeof(Formocast::HardwareConstants)));
   return hw;
 }
@@ -86,8 +83,11 @@ Formocast::HardwareConstants Formocast::getHardwareConstants(
         14,  0,   0,   0,   10,  0,   0,   0,   10,  0,  0,   0,   6,   0,   0,   0,   3,   0,
         0,   0,   3,   0,   0,   0,   10,  0,   0,   0,  10,  0,   0,   0,   10,  0,   0,   0,
         4,   0,   0,   0,   2,   0,   0,   0,   1,   0,  0,   0};
-    hw                           = archConstantMap(magic, 232);
+    hw              = archConstantMap(magic, 232);
     hw.architecture = hardware_t::architecture_t::gfx950;
+    hw.dpm_alpha    = 0.0;
+    hw.dpm_beta     = 0.0;
+    hw.dpm_gamma    = 0.0;
   } else if (arch == hardware_t::architecture_t::gfx942) {
     unsigned char magic[232] = {
         0,  0,   0,   0,   0,   0,  224, 64,  0,   0,   0,   0,   0,   0,   80,  65,  0,   0,   0,
@@ -102,8 +102,11 @@ Formocast::HardwareConstants Formocast::getHardwareConstants(
         40, 92,  143, 226, 63,  8,  0,   0,   0,   10,  0,   0,   0,   5,   0,   0,   0,   2,   0,
         0,  0,   6,   0,   0,   0,  3,   0,   0,   0,   3,   0,   0,   0,   10,  0,   0,   0,   10,
         0,  0,   0,   10,  0,   0,  0,   4,   0,   0,   0,   2,   0,   0,   0,   1,   0,   0,   0};
-    hw                           = archConstantMap(magic, 232);
+    hw              = archConstantMap(magic, 232);
     hw.architecture = hardware_t::architecture_t::gfx942;
+    hw.dpm_alpha    = 1.2622;
+    hw.dpm_beta     = 1.1630;
+    hw.dpm_gamma    = 0.4004;
   } else if (arch == hardware_t::architecture_t::gfx1201) {
     unsigned char magic[232] = {
         0,   0,   0,   0,   0,   0,   224, 64,  0,   0,   0,   0,   0,   0,   96,  65, 0,   0,
@@ -119,8 +122,11 @@ Formocast::HardwareConstants Formocast::getHardwareConstants(
         14,  0,   0,   0,   10,  0,   0,   0,   10,  0,   0,   0,   6,   0,   0,   0,  3,   0,
         0,   0,   3,   0,   0,   0,   10,  0,   0,   0,   10,  0,   0,   0,   10,  0,  0,   0,
         4,   0,   0,   0,   2,   0,   0,   0,   1,   0,   0,   0};
-    hw                           = archConstantMap(magic, 232);
+    hw              = archConstantMap(magic, 232);
     hw.architecture = hardware_t::architecture_t::gfx1201;
+    hw.dpm_alpha    = 0.0;
+    hw.dpm_beta     = 0.0;
+    hw.dpm_gamma    = 0.0;
   } else {
     throw std::runtime_error(
         "Attempting to retrieve hardware constants for unsupported architecture");
@@ -885,6 +891,21 @@ Formocast::PredictedPerformance Formocast::predictedPerformance(void) const {
 
   // TODO: replace with proper edge-tile model once tail/edge interactions are fully modeled
   if (int(M) % int(MT0) != 0) perf = perf + std::max(store_edge, store);
+
+  // 17. Two-path DPM (Dynamic Power Management) frequency scaling.
+  // Path 1 – Core frequency: inverted-U vs CU utilization (thermal from compute).
+  // Path 2 – L2 bandwidth throttle: high per-iteration L2 traffic saturates
+  //          on-chip interconnect, reducing effective throughput.  Applied only
+  //          to the loop fraction of total cost (where L2 pressure occurs).
+  {
+    double cu_util = static_cast<double>(WGs_per_tile) / hw_consts.NumCUs;
+    double f_core =
+        std::max(1.0 + hw_consts.dpm_alpha * cu_util - hw_consts.dpm_beta * cu_util * cu_util, 0.3);
+    double f_l2             = std::max(1.0 - hw_consts.dpm_gamma * mem_costs.mem_l2, 0.3);
+    double loop_cost_scaled = (loop_overall + tail_overall) * static_cast<double>(num_tiles);
+    double loop_frac        = std::min(loop_cost_scaled / std::max(perf, 1e-12), 1.0);
+    perf                    = perf * ((1.0 - loop_frac) / f_core + loop_frac / (f_core * f_l2));
+  }
 
   pp.microSeconds = perf;
   pp.hitRate      = cache_hits.totalL2HitRate * 100;

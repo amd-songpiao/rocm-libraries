@@ -83,11 +83,12 @@ Formocast::HardwareConstants Formocast::getHardwareConstants(
         14,  0,   0,   0,   10,  0,   0,   0,   10,  0,  0,   0,   6,   0,   0,   0,   3,   0,
         0,   0,   3,   0,   0,   0,   10,  0,   0,   0,  10,  0,   0,   0,   10,  0,   0,   0,
         4,   0,   0,   0,   2,   0,   0,   0,   1,   0,  0,   0};
-    hw              = archConstantMap(magic, 232);
-    hw.architecture = hardware_t::architecture_t::gfx950;
-    hw.dpm_alpha    = 0.0;
-    hw.dpm_beta     = 0.0;
-    hw.dpm_gamma    = 0.0;
+    hw                           = archConstantMap(magic, 232);
+    hw.architecture              = hardware_t::architecture_t::gfx950;
+    hw.dpm_alpha                 = 0.0;
+    hw.dpm_beta                  = 0.0;
+    hw.dpm_gamma                 = 0.0;
+    hw.gsu_mb_launch_overhead_us = 5.0;
   } else if (arch == hardware_t::architecture_t::gfx942) {
     unsigned char magic[232] = {
         0,  0,   0,   0,   0,   0,  224, 64,  0,   0,   0,   0,   0,   0,   80,  65,  0,   0,   0,
@@ -102,11 +103,12 @@ Formocast::HardwareConstants Formocast::getHardwareConstants(
         40, 92,  143, 226, 63,  8,  0,   0,   0,   10,  0,   0,   0,   5,   0,   0,   0,   2,   0,
         0,  0,   6,   0,   0,   0,  3,   0,   0,   0,   3,   0,   0,   0,   10,  0,   0,   0,   10,
         0,  0,   0,   10,  0,   0,  0,   4,   0,   0,   0,   2,   0,   0,   0,   1,   0,   0,   0};
-    hw              = archConstantMap(magic, 232);
-    hw.architecture = hardware_t::architecture_t::gfx942;
-    hw.dpm_alpha    = 1.2622;
-    hw.dpm_beta     = 1.1630;
-    hw.dpm_gamma    = 0.4004;
+    hw                           = archConstantMap(magic, 232);
+    hw.architecture              = hardware_t::architecture_t::gfx942;
+    hw.dpm_alpha                 = 1.2622;
+    hw.dpm_beta                  = 1.1630;
+    hw.dpm_gamma                 = 0.4004;
+    hw.gsu_mb_launch_overhead_us = 20.6;
   } else if (arch == hardware_t::architecture_t::gfx1201) {
     unsigned char magic[232] = {
         0,   0,   0,   0,   0,   0,   224, 64,  0,   0,   0,   0,   0,   0,   96,  65, 0,   0,
@@ -122,11 +124,12 @@ Formocast::HardwareConstants Formocast::getHardwareConstants(
         14,  0,   0,   0,   10,  0,   0,   0,   10,  0,   0,   0,   6,   0,   0,   0,  3,   0,
         0,   0,   3,   0,   0,   0,   10,  0,   0,   0,   10,  0,   0,   0,   10,  0,  0,   0,
         4,   0,   0,   0,   2,   0,   0,   0,   1,   0,   0,   0};
-    hw              = archConstantMap(magic, 232);
-    hw.architecture = hardware_t::architecture_t::gfx1201;
-    hw.dpm_alpha    = 0.0;
-    hw.dpm_beta     = 0.0;
-    hw.dpm_gamma    = 0.0;
+    hw                           = archConstantMap(magic, 232);
+    hw.architecture              = hardware_t::architecture_t::gfx1201;
+    hw.dpm_alpha                 = 0.0;
+    hw.dpm_beta                  = 0.0;
+    hw.dpm_gamma                 = 0.0;
+    hw.gsu_mb_launch_overhead_us = 5.0;
   } else {
     throw std::runtime_error(
         "Attempting to retrieve hardware constants for unsupported architecture");
@@ -319,7 +322,8 @@ double Formocast::calculateGlobalSplitUOverhead(double M,
                                                        hw_consts.L1BusWidthPerCU,
                                                        hw_consts.L2BusWidthPerCU,
                                                        hw_consts.L1WriteBusWidthPerCU,
-                                                       hw_consts.L2WriteBusWidthPerCU);
+                                                       hw_consts.L2WriteBusWidthPerCU,
+                                                       hw_consts.gsu_mb_launch_overhead_us);
   } else if (gsuMethod == 3 && GlobalSplitU > 1)  // MBSK
   {
     gsu_overall = simulator::getMultipleBufferSingleKernelOverhead(GlobalSplitU,
@@ -897,6 +901,7 @@ Formocast::PredictedPerformance Formocast::predictedPerformance(void) const {
   // Path 2 – L2 bandwidth throttle: high per-iteration L2 traffic saturates
   //          on-chip interconnect, reducing effective throughput.  Applied only
   //          to the loop fraction of total cost (where L2 pressure occurs).
+  // TODO: replace hard-coded coefficients with per-architecture constants
   {
     double cu_util = static_cast<double>(WGs_per_tile) / hw_consts.NumCUs;
     double f_core =

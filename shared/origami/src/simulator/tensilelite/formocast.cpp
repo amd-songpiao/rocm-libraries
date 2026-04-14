@@ -92,8 +92,16 @@ double getMultipleBufferOverhead(double M,
                                  double L1BusWidthPerCU,
                                  double L2BusWidthPerCU,
                                  double L1WriteBusWidthPerCU,
-                                 double L2WriteBusWidthPerCU) {
-  // MB (MultiBuffer) GSU overhead calculation
+                                 double L2WriteBusWidthPerCU,
+                                 double gsu_mb_launch_overhead_us) {
+  // MB (MultiBuffer) GSU overhead calculation.
+  // MultipleBuffer launches a separate reduction kernel after the GEMM kernel.
+  // TODO: This function only models memory bandwidth costs of the reduction.
+  // It needs to be extended with an exact model that includes:
+  //   - Reduction kernel launch/dispatch latency (currently approximated below)
+  //   - Workspace allocation and write-back costs from the GEMM kernel
+  //   - Barrier/synchronization costs between GEMM and reduction kernels
+  //   - Per-XCD dispatch overhead for small grids
   double read_l1_req, write_l1_req;
 
   auto bpeIn  = bpeCompute;
@@ -149,7 +157,7 @@ double getMultipleBufferOverhead(double M,
       std::max(D_L1_clk / cu_freq,
                std::max(D_L2_clk / cu_freq, std::max(D_L3_clk / hbm_freq, D_hbm_clk / hbm_freq)));
 
-  return GSU_mem_overall + store;
+  return gsu_mb_launch_overhead_us + GSU_mem_overall + store;
 }
 
 double getMultipleBufferSingleKernelOverhead(double GlobalSplitU,

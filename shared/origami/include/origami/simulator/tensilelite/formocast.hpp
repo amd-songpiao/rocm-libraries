@@ -88,7 +88,8 @@ double getMultipleBufferOverhead(double M,
                                  double L1BusWidthPerCU,
                                  double L2BusWidthPerCU,
                                  double L1WriteBusWidthPerCU,
-                                 double L2WriteBusWidthPerCU);
+                                 double L2WriteBusWidthPerCU,
+                                 double gsu_mb_launch_overhead_us);
 
 /**
  * @brief Calculate overhead for multiple buffer single kernel (StreamK) Global Split K approach

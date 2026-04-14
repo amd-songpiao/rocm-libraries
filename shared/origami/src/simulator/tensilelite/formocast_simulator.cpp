@@ -34,9 +34,15 @@ static double getPrefetchPerformance(int grvwa,
   // issue 2nd prefetch
   double grCycles2 = numGRA * 4 / waveNum;
   grCycles2 += numGRB * 4 / waveNum;
-  int numCacheLines = numGRA + numGRB;
-  return (grCycles2 + others + 1024.0 + 16.0 * (numCacheLines > 1 ? numCacheLines - 1 : 0))
-         / math_frequency;
+
+  // HBM read completion latency: the first cache line has full round-trip latency
+  // (~1024 cycles), subsequent lines from pipelined reads arrive at ~16 cycles each.
+  // Old formula (1024 * depthU / 64) assumed serialized reads, causing massive
+  // over-prediction for large DepthU (e.g., 512).
+  uint32_t numCacheLines = depthU / 64;
+  double hbmLatency      = 1024.0 + 16.0 * (numCacheLines > 1 ? numCacheLines - 1 : 0);
+
+  return (grCycles2 + others + hbmLatency) / math_frequency;
 }
 
 double Formocast::getLoopOverall(const MemoryAccessCosts& mem,
@@ -80,7 +86,7 @@ Formocast::HardwareConstants Formocast::getHardwareConstants(
         14,  0,   0,   0,   10,  0,   0,   0,   10,  0,  0,   0,   6,   0,   0,   0,   3,   0,
         0,   0,   3,   0,   0,   0,   10,  0,   0,   0,  10,  0,   0,   0,   10,  0,   0,   0,
         4,   0,   0,   0,   2,   0,   0,   0,   1,   0,  0,   0};
-    hw              = archConstantMap(magic, 232);
+    hw                           = archConstantMap(magic, 232);
     hw.architecture = hardware_t::architecture_t::gfx950;
   } else if (arch == hardware_t::architecture_t::gfx942) {
     unsigned char magic[232] = {
@@ -96,7 +102,7 @@ Formocast::HardwareConstants Formocast::getHardwareConstants(
         40, 92,  143, 226, 63,  8,  0,   0,   0,   10,  0,   0,   0,   5,   0,   0,   0,   2,   0,
         0,  0,   6,   0,   0,   0,  3,   0,   0,   0,   3,   0,   0,   0,   10,  0,   0,   0,   10,
         0,  0,   0,   10,  0,   0,  0,   4,   0,   0,   0,   2,   0,   0,   0,   1,   0,   0,   0};
-    hw              = archConstantMap(magic, 232);
+    hw                           = archConstantMap(magic, 232);
     hw.architecture = hardware_t::architecture_t::gfx942;
   } else if (arch == hardware_t::architecture_t::gfx1201) {
     unsigned char magic[232] = {
@@ -113,7 +119,7 @@ Formocast::HardwareConstants Formocast::getHardwareConstants(
         14,  0,   0,   0,   10,  0,   0,   0,   10,  0,   0,   0,   6,   0,   0,   0,  3,   0,
         0,   0,   3,   0,   0,   0,   10,  0,   0,   0,   10,  0,   0,   0,   10,  0,  0,   0,
         4,   0,   0,   0,   2,   0,   0,   0,   1,   0,   0,   0};
-    hw              = archConstantMap(magic, 232);
+    hw                           = archConstantMap(magic, 232);
     hw.architecture = hardware_t::architecture_t::gfx1201;
   } else {
     throw std::runtime_error(
@@ -385,12 +391,14 @@ Formocast::MemoryAccessCosts Formocast::calculateMemoryAccessCosts(double MT0,
   double L2_overall  = (A_L2_clk + B_L2_clk) / hw.math_frequency;
   double L3_overall  = (A_L3_clk + B_L3_clk) / hw.mem_frequency;
   double hbm_overall = (A_hbm_clk + B_hbm_clk) / hw.mem_frequency;
-  mem.mem_overall    = std::max({L1_overall, L2_overall, L3_overall, hbm_overall});
+  // Each cache level serves its requests on independent hardware paths,
+  // so per-iteration memory time is bounded by the slowest level.
+  mem.mem_overall = std::max({L1_overall, L2_overall, L3_overall, hbm_overall});
 
   mem.mem_l1  = L1_overall;
-  mem.mem_l2  = L2_overall;   // std::max(mem.mem_l1, L2_overall);
-  mem.mem_l3  = L3_overall;   // std::max(mem.mem_l2, L3_overall);
-  mem.mem_hbm = hbm_overall;  // std::max(mem.mem_l3, hbm_overall);
+  mem.mem_l2  = L2_overall;
+  mem.mem_l3  = L3_overall;
+  mem.mem_hbm = hbm_overall;
   mem.l1_hit  = (hr.A_L1_hit * MT0 + hr.B_L1_hit * MT1) / (MT0 + MT1);
   mem.l2_hit  = hr.totalL2HitRate;
   mem.l3_hit  = hr.totalL3HitRate;
@@ -415,6 +423,7 @@ double Formocast::resolveOccupancy(const HardwareConstants& hw,
   if (CUOccupancy >= 2) {
     perf = (prefetch + mathCost) + (mathCost + storeCost) * (num_tiles - 1);
   } else {
+    // CUOccupancy == -1 (unknown) or 0 or 1: low-occupancy scaling
     perf *= num_tiles;
     perf += 1.7 * (num_tiles - 1);
   }
@@ -665,8 +674,18 @@ Formocast::PredictedPerformance Formocast::predictedPerformance(void) const {
                                             NumThreads,
                                             NumWave0,
                                             NumWave1);
-  L2CacheHitRate l2 = computeL2CacheHitRate(
-      M, N, K_AfterGSU, hw_consts, GlobalSplitU, WGM, NumBatches, bpeA, bpeB, sizeMapping.NTA, sizeMapping.NTB, isGSUWGMRR);
+  L2CacheHitRate l2 = computeL2CacheHitRate(M,
+                                            N,
+                                            K_AfterGSU,
+                                            hw_consts,
+                                            GlobalSplitU,
+                                            WGM,
+                                            NumBatches,
+                                            bpeA,
+                                            bpeB,
+                                            sizeMapping.NTA,
+                                            sizeMapping.NTB,
+                                            isGSUWGMRR);
   L3CacheHitRate l3 = computeL3CacheHitRate(M,
                                             N,
                                             K,
@@ -798,7 +817,11 @@ Formocast::PredictedPerformance Formocast::predictedPerformance(void) const {
       GRVWA, GRVWB, bpeA, bpeB, depthU, waveNum, MT0, MT1, hw_consts.math_frequency, numAccPerWave);
   double preLoopCost = hw_consts.initialCost + prefetch;
 
-  // 11a. LDS bank conflict estimation.
+  // 11a. LDS bank conflict cost (per-iteration, added to math before loop aggregation)
+  // Power-of-2 tile dims cause worst-case bank conflicts (gcd=32);
+  // non-power-of-2 dims (96, 224) spread across more banks (gcd=16).
+  // Each ds_read with k-way conflict serializes into k cycles (k-1 extra).
+  // Per loop iteration there are depthU/MI_K rounds of ds_reads for A and B.
   const int NUM_LDS_BANKS  = 32;
   const int LDS_BANK_WIDTH = 4;
   double ldsBankConflictA  = 1.0;
@@ -817,22 +840,26 @@ Formocast::PredictedPerformance Formocast::predictedPerformance(void) const {
                                  ds_reads_per_loop / hw_consts.math_frequency;
 
   // 11b. Calculate loop Performance
+  // Add LDS conflict cost to math so it participates in max(math, mem) per iteration;
+  // if the loop is memory-bound the conflict cost is partially absorbed.
   double math_overall = math_clk / hw_consts.math_frequency;
   double loop_overall =
       getLoopOverall(mem_costs, math_overall + lds_conflict_per_iter, loopCnt, PGR);
 
   loop_overall += loopCnt * 0.2;
+
   // 12. Aggregate Performance: pre-loop + unrolled-loop + post-loop
   double perf = preLoopCost + loop_overall + store;
   if (num_tiles > 1) {
-    // consider edge percentage
+    // Fraction of workgroups that are edge tiles (partial in M or N dimension).
+    // full_wgs = floor(M/MT0) * floor(N/MT1), total_wgs = ceil(M/MT0) * ceil(N/MT1)
     uint32_t full_m        = static_cast<uint32_t>(M) / static_cast<uint32_t>(MT0);
     uint32_t full_n        = static_cast<uint32_t>(N) / static_cast<uint32_t>(MT1);
     double full_wgs        = static_cast<double>(full_m) * full_n;
     double total_wgs       = static_cast<double>(M_WGs_total) * N_WGs_total;
     double edge_percentage = (total_wgs > 0) ? 1.0 - full_wgs / total_wgs : 0.0;
     store                  = edge_percentage * store_edge + (1 - edge_percentage) * store;
-    perf  = preLoopCost + loop_overall + store;
+    perf                   = preLoopCost + loop_overall + store;
   } else {
     store = std::max(store_edge, store);
     perf  = prefetch + loop_overall + store;
@@ -858,6 +885,7 @@ Formocast::PredictedPerformance Formocast::predictedPerformance(void) const {
 
   // TODO: replace with proper edge-tile model once tail/edge interactions are fully modeled
   if (int(M) % int(MT0) != 0) perf = perf + std::max(store_edge, store);
+
   pp.microSeconds = perf;
   pp.hitRate      = cache_hits.totalL2HitRate * 100;
 

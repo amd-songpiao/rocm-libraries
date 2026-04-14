@@ -34,7 +34,9 @@ static double getPrefetchPerformance(int grvwa,
   // issue 2nd prefetch
   double grCycles2 = numGRA * 4 / waveNum;
   grCycles2 += numGRB * 4 / waveNum;
-  return (grCycles2 + others + 1024 * depthU / 64) / math_frequency;
+  int numCacheLines = numGRA + numGRB;
+  return (grCycles2 + others + 1024.0 + 16.0 * (numCacheLines > 1 ? numCacheLines - 1 : 0))
+         / math_frequency;
 }
 
 double Formocast::getLoopOverall(const MemoryAccessCosts& mem,
@@ -150,18 +152,17 @@ void Formocast::calculateStorePerformance(double M,
   double D_L1_clk              = D_L1_req * 64 / hw_consts.L1WriteBusWidthPerCU;
   double D_L2_clk = D_L2_req * 64 / std::min(hw_consts.L2WriteBusWidthPerCU, L2WriteBandWidthPerCU);
   double D_L3_clk = D_L3_req * 64 / L3BandWidthPerCU;
-  // TODO: D_hbm_clk use D_L3_req.
-  double D_hbm_clk     = 0 * 64 / HBMBandWidthPerCU;
+  double D_hbm_clk     = D_L3_req * 64 / HBMBandWidthPerCU;
   double D_L1_clk_edge = D_L1_edge_req * 64 / hw_consts.L1WriteBusWidthPerCU;
   double D_L2_clk_edge =
       D_L2_edge_req * 64 / std::min(hw_consts.L2WriteBusWidthPerCU, L2WriteBandWidthPerCU);
   double D_L3_clk_edge  = D_L3_edge_req * 64 / L3BandWidthPerCU;
-  double D_hbm_clk_edge = 0 * 64 / HBMBandWidthPerCU;
+  double D_hbm_clk_edge = D_L3_edge_req * 64 / HBMBandWidthPerCU;
   double D_L1_clk_total = total_store_req1 * 64 / hw_consts.L1WriteBusWidthPerCU;
   double D_L2_clk_total =
       total_store_req2 * 64 / std::min(hw_consts.L2WriteBusWidthPerCU, L2WriteBandWidthPerCU);
   double D_L3_clk_total  = total_store_req3 * 64 / L3BandWidthPerCU;
-  double D_hbm_clk_total = 0 * 64 / HBMBandWidthPerCU;
+  double D_hbm_clk_total = total_store_req3 * 64 / HBMBandWidthPerCU;
 
   double store_edge_overall = ((D_L1_clk_edge + D_L2_clk_edge) / hw_consts.math_frequency) +
                               ((D_L3_clk_edge + D_hbm_clk_edge) / hw_consts.mem_frequency);
@@ -384,7 +385,7 @@ Formocast::MemoryAccessCosts Formocast::calculateMemoryAccessCosts(double MT0,
   double L2_overall  = (A_L2_clk + B_L2_clk) / hw.math_frequency;
   double L3_overall  = (A_L3_clk + B_L3_clk) / hw.mem_frequency;
   double hbm_overall = (A_hbm_clk + B_hbm_clk) / hw.mem_frequency;
-  mem.mem_overall    = L1_overall + L2_overall + L3_overall + hbm_overall;
+  mem.mem_overall    = std::max({L1_overall, L2_overall, L3_overall, hbm_overall});
 
   mem.mem_l1  = L1_overall;
   mem.mem_l2  = L2_overall;   // std::max(mem.mem_l1, L2_overall);
@@ -702,7 +703,7 @@ Formocast::PredictedPerformance Formocast::predictedPerformance(void) const {
                             store_edge);
 
   // 7. Calculate GSU Overhead
-  double storeGSU     = store * 2;  // FIXME: incorrect
+  double storeGSU     = store;
   auto vgprUsageCheck = MT0 * MT1 / miSize / miSize;
   double gsu_overall  = calculateGlobalSplitUOverhead(M,
                                                      N,

@@ -1069,6 +1069,8 @@ static double compute_formocast_latency(const problem_t& problem,
   size_mapping.CUOccupancy            = config.occupancy;
   size_mapping.PrefetchGlobalRead     = config.tensile().prefetch_global_read;
   size_mapping.MathClocksUnrolledLoop = config.tensile().math_clocks_unrolled_loop;
+  size_mapping.NTA                    = config.tensile().non_temporal_a;
+  size_mapping.NTB                    = config.tensile().non_temporal_b;
 
   // Set problem, solution, and hardware in Formocast
   formocast.setProblem(prob_info);
@@ -1134,6 +1136,8 @@ std::vector<double> extract_formocast_features(const problem_t& problem,
     size_mapping.globalSplitUWorkGroupMappingRoundRobin = tp.global_split_u_wgm_round_robin;
     size_mapping.PrefetchGlobalRead                     = tp.prefetch_global_read;
     size_mapping.MathClocksUnrolledLoop                 = tp.math_clocks_unrolled_loop;
+    size_mapping.NTA                                    = tp.non_temporal_a;
+    size_mapping.NTB                                    = tp.non_temporal_b;
   } else {
     size_mapping.depthU = config.mt.k;
   }

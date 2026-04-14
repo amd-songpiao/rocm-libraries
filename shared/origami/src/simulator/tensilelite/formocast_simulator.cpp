@@ -643,8 +643,8 @@ Formocast::PredictedPerformance Formocast::predictedPerformance(void) const {
                                             MT1,
                                             bpeA,
                                             bpeB,
-                                            0,
-                                            0,
+                                            sizeMapping.NTA,
+                                            sizeMapping.NTB,
                                             GRVWA,
                                             GRVWB,
                                             DTVA,
@@ -663,15 +663,15 @@ Formocast::PredictedPerformance Formocast::predictedPerformance(void) const {
                                             NumWave0,
                                             NumWave1);
   L2CacheHitRate l2 = computeL2CacheHitRate(
-      M, N, K_AfterGSU, hw_consts, GlobalSplitU, WGM, NumBatches, bpeA, bpeB, 0, 0, isGSUWGMRR);
+      M, N, K_AfterGSU, hw_consts, GlobalSplitU, WGM, NumBatches, bpeA, bpeB, sizeMapping.NTA, sizeMapping.NTB, isGSUWGMRR);
   L3CacheHitRate l3 = computeL3CacheHitRate(M,
                                             N,
                                             K,
                                             hw_consts,
                                             bpeA,
                                             bpeB,
-                                            0,
-                                            0,
+                                            sizeMapping.NTA,
+                                            sizeMapping.NTB,
                                             N_WGs_total,
                                             M_WGs_total,
                                             N_WGs_per_tile,

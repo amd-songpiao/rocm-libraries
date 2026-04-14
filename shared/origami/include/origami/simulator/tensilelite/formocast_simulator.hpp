@@ -287,6 +287,8 @@ class Formocast {
     double edge_percentage     = 0.0;
     double compute_bound_ratio = 0.0;
     double occupancy           = 0.0;
+    double lds_bank_conflict_a = 1.0;
+    double lds_bank_conflict_b = 1.0;
 
     // for == compare, can remove this if we are using MinTieBreakerInfo
     bool operator==(TieBreakerInfo const& rhs) const {
@@ -689,7 +691,7 @@ class Formocast {
                           double mathCost,
                           double storeCost,
                           uint32_t num_tiles,
-                          uint32_t CUOccupancy) const;
+                          int32_t CUOccupancy) const;
 
   /**
    * @brief Compare if current configuration is better than previous solution

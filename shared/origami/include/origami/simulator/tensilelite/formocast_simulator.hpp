@@ -595,7 +595,7 @@ namespace origami
          * @param CUOccupancy Target CU occupancy
          * @return Resolved occupancy value
          */
-        double resolveOccupancy(const HardwareConstants& hw, double perf, double prefetch, double mathCost, double storeCost, uint32_t num_tiles, uint32_t CUOccupancy) const;
+        double resolveOccupancy(const HardwareConstants& hw, double perf, double prefetch, double mathCost, double storeCost, uint32_t num_tiles, int32_t CUOccupancy) const;
 
         /**
          * @brief Compare if current configuration is better than previous solution

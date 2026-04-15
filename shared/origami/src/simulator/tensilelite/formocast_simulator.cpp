@@ -280,9 +280,11 @@ namespace origami
         return mem;
     }
 
-    double Formocast::resolveOccupancy(const HardwareConstants& hw, double perf, double prefetch, double mathCost, double storeCost, uint32_t num_tiles, uint32_t CUOccupancy) const
+    double Formocast::resolveOccupancy(const HardwareConstants& hw, double perf, double prefetch, double mathCost, double storeCost, uint32_t num_tiles, int32_t CUOccupancy) const
     {
-        if ((num_tiles > 1)  && CUOccupancy >= 2)
+        if (num_tiles <= 1) { return perf; }
+
+        if (CUOccupancy >= 2)
         {
             perf = (prefetch + mathCost)
                     + (mathCost + storeCost)
@@ -608,22 +610,39 @@ namespace origami
                                                  numAccPerWave);
         double preLoopCost = hw_consts.initialCost + prefetch;
 
-        // 11. Calculate loop Performance
+        // 11a. LDS bank conflict estimation.
+        const int NUM_LDS_BANKS  = 32;
+        const int LDS_BANK_WIDTH = 4;
+        double ldsBankConflictA  = 1.0;
+        double ldsBankConflictB  = 1.0;
+        if (!DTVA) {
+            int stride_A = (std::min(static_cast<int>(MT0), static_cast<int>(M)) * bpeA) / LDS_BANK_WIDTH;
+            if (stride_A > 0) ldsBankConflictA = static_cast<double>(std::__gcd(stride_A, NUM_LDS_BANKS));
+        }
+        if (!DTVB) {
+            int stride_B = (std::min(static_cast<int>(MT1), static_cast<int>(N)) * bpeB) / LDS_BANK_WIDTH;
+            if (stride_B > 0) ldsBankConflictB = static_cast<double>(std::__gcd(stride_B, NUM_LDS_BANKS));
+        }
+        uint32_t mi_k                = std::max(sizeMapping.matrixInstruction[2], 1);
+        uint32_t ds_reads_per_loop   = depthU / mi_k;
+        double lds_conflict_per_iter = (ldsBankConflictA - 1.0 + ldsBankConflictB - 1.0) *
+                                       ds_reads_per_loop / hw_consts.math_frequency;
+
+        // 11b. Calculate loop Performance
         double math_overall = math_clk / hw_consts.math_frequency;
-        double loop_overall = getLoopOverall(mem_costs, math_overall, loopCnt, PGR);
+        double loop_overall = getLoopOverall(mem_costs, math_overall + lds_conflict_per_iter, loopCnt, PGR);
 
         loop_overall += loopCnt*0.2;
         // 12. Aggregate Performance: pre-loop + unrolled-loop + post-loop
         double perf = preLoopCost + loop_overall + store;
         if (num_tiles > 1)
         {
-            // consider edge percentage
-            double edge_percentage = 0.0;
-            if (M_WGs_total * MT0 > M)
-            {
-                edge_percentage = 1 / (double)M_WGs_total;
-            }
-            store = edge_percentage * store_edge + (1 - edge_percentage) * store;
+            uint32_t full_m        = static_cast<uint32_t>(M) / static_cast<uint32_t>(MT0);
+            uint32_t full_n        = static_cast<uint32_t>(N) / static_cast<uint32_t>(MT1);
+            double full_wgs        = static_cast<double>(full_m) * full_n;
+            double total_wgs       = static_cast<double>(M_WGs_total) * N_WGs_total;
+            double edge_percentage = (total_wgs > 0) ? 1.0 - full_wgs / total_wgs : 0.0;
+            store                  = edge_percentage * store_edge + (1 - edge_percentage) * store;
             perf = preLoopCost + loop_overall + store;
         }
         else { store = std::max(store_edge, store); perf = prefetch + loop_overall + store;}
@@ -632,8 +651,8 @@ namespace origami
         double tail_overall = 0.0;
         if (K_tail > 0)
         {
-            // FIXME: need to add new opt.
-            tail_overall = (mem_costs.mem_overall*K_tail/depthU + math_overall) + prefetch*2;
+            double tail_ratio = static_cast<double>(K_tail) / depthU;
+            tail_overall      = (mem_costs.mem_overall + math_overall) * tail_ratio + prefetch;
             perf += tail_overall;
         }
 
@@ -646,6 +665,7 @@ namespace origami
         // 16. Add GSU Reduction Part
         perf += gsu_overall;
 
+        // TODO: replace with proper edge-tile model once tail/edge interactions are fully modeled
         if (int(M) % int(MT0) != 0)
             perf = perf + std::max(store_edge, store);
         pp.microSeconds = perf;
@@ -676,6 +696,8 @@ namespace origami
         }
         perfInfo.compute_bound_ratio = math_overall / std::max(mem_costs.mem_overall, 1e-12);
         perfInfo.occupancy = static_cast<double>(CUOccupancy);
+        perfInfo.lds_bank_conflict_a = ldsBankConflictA;
+        perfInfo.lds_bank_conflict_b = ldsBankConflictB;
 
         return pp;
     }

@@ -160,6 +160,12 @@ namespace origami
             uint32_t LocalWriteConflictMultiplierB32;
             hardware_t::architecture_t architecture;
 
+            // DPM (Dynamic Power Management) calibration constants (per-platform).
+            // Set explicitly after archConstantMap(); not part of magic-byte blob.
+            double dpm_alpha = 0.0;
+            double dpm_beta  = 0.0;
+            double dpm_gamma = 0.0;
+
             void print() const {
                 std::cout << "HardwareConstants:" << std::endl;
                 std::cout << "  architecture:         " << (architecture == hardware_t::architecture_t::gfx950 ? "gfx950" : architecture == hardware_t::architecture_t::gfx942 ? "gfx942" : architecture == hardware_t::architecture_t::gfx1201 ? "gfx1201" : "Unknown") << std::endl;
@@ -192,6 +198,9 @@ namespace origami
                 std::cout << "  LocalReadConflictMultiplierB128: " << LocalReadConflictMultiplierB128 << std::endl;
                 std::cout << "  LocalReadConflictMultiplierB64: " << LocalReadConflictMultiplierB64 << std::endl;
                 std::cout << "  LocalReadConflictMultiplierB32: " << LocalReadConflictMultiplierB32 << std::endl;
+                std::cout << "  dpm_alpha:                " << dpm_alpha << std::endl;
+                std::cout << "  dpm_beta:                 " << dpm_beta << std::endl;
+                std::cout << "  dpm_gamma:                " << dpm_gamma << std::endl;
             };
         };
 

@@ -162,9 +162,10 @@ namespace origami
 
             // DPM (Dynamic Power Management) calibration constants (per-platform).
             // Set explicitly after archConstantMap(); not part of magic-byte blob.
-            double dpm_alpha = 0.0;
-            double dpm_beta  = 0.0;
-            double dpm_gamma = 0.0;
+            double dpm_alpha                 = 0.0;
+            double dpm_beta                  = 0.0;
+            double dpm_gamma                 = 0.0;
+            double gsu_mb_launch_overhead_us = 0.0;
 
             void print() const {
                 std::cout << "HardwareConstants:" << std::endl;
@@ -201,6 +202,7 @@ namespace origami
                 std::cout << "  dpm_alpha:                " << dpm_alpha << std::endl;
                 std::cout << "  dpm_beta:                 " << dpm_beta << std::endl;
                 std::cout << "  dpm_gamma:                " << dpm_gamma << std::endl;
+                std::cout << "  gsu_mb_launch_overhead_us:" << gsu_mb_launch_overhead_us << std::endl;
             };
         };
 

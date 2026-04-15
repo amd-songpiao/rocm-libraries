@@ -68,29 +68,32 @@ namespace origami
         if(arch == hardware_t::architecture_t::gfx950)
         {
             unsigned char magic[232] = {0, 0, 0, 0, 0, 0, 224, 64, 0, 0, 0, 0, 0, 0, 80, 65, 0, 0, 0, 0, 0, 0, 176, 65, 0, 0, 0, 0, 0, 0, 96, 64, 0, 0, 0, 0, 0, 0, 96, 64, 0, 0, 0, 0, 0, 0, 80, 64, 0, 0, 0, 0, 0, 0, 96, 64, 0, 0, 0, 0, 0, 0, 80, 64, 0, 0, 0, 0, 0, 0, 80, 64, 0, 0, 0, 0, 0, 0, 8, 64, 0, 0, 0, 0, 0, 176, 157, 64, 189, 134, 242, 26, 202, 171, 152, 64, 189, 134, 242, 26, 202, 171, 168, 64, 0, 0, 0, 0, 0, 32, 156, 64, 0, 0, 0, 0, 0, 92, 162, 64, 205, 204, 204, 204, 204, 204, 4, 64, 205, 204, 204, 204, 204, 204, 0, 64, 0, 0, 0, 0, 0, 0, 176, 64, 0, 0, 0, 0, 0, 0, 112, 64, 0, 0, 0, 0, 0, 0, 80, 64, 205, 204, 204, 204, 204, 204, 236, 63, 0, 0, 0, 0, 0, 0, 232, 63, 8, 0, 0, 0, 14, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0, 6, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0};
-            hw              = archConstantMap(magic, 232);
-            hw.architecture = hardware_t::architecture_t::gfx950;
-            hw.dpm_alpha    = 0.0;
-            hw.dpm_beta     = 0.0;
-            hw.dpm_gamma    = 0.0;
+            hw                           = archConstantMap(magic, 232);
+            hw.architecture              = hardware_t::architecture_t::gfx950;
+            hw.dpm_alpha                 = 0.0;
+            hw.dpm_beta                  = 0.0;
+            hw.dpm_gamma                 = 0.0;
+            hw.gsu_mb_launch_overhead_us = 5.0;
         }
         else if(arch == hardware_t::architecture_t::gfx942)
         {
             unsigned char magic[232] = {0, 0, 0, 0, 0, 0, 224, 64, 0, 0, 0, 0, 0, 0, 80, 65, 0, 0, 0, 0, 0, 0, 176, 65, 0, 0, 0, 0, 0, 0, 96, 64, 0, 0, 0, 0, 0, 0, 96, 64, 0, 0, 0, 0, 0, 0, 80, 64, 0, 0, 0, 0, 0, 0, 96, 64, 0, 0, 0, 0, 0, 0, 80, 64, 0, 0, 0, 0, 0, 0, 80, 64, 0, 0, 0, 0, 0, 0, 8, 64, 0, 0, 0, 0, 0, 80, 148, 64, 118, 98, 39, 118, 98, 7, 162, 64, 118, 98, 39, 118, 98, 7, 178, 64, 0, 0, 0, 0, 0, 48, 145, 64, 0, 0, 0, 0, 0, 48, 161, 64, 154, 153, 153, 153, 153, 153, 5, 64, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 160, 64, 0, 0, 0, 0, 0, 0, 115, 64, 0, 0, 0, 0, 0, 0, 80, 64, 205, 204, 204, 204, 204, 204, 236, 63, 143, 194, 245, 40, 92, 143, 226, 63, 8, 0, 0, 0, 10, 0, 0, 0, 5, 0, 0, 0, 2, 0, 0, 0, 6, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0};
-            hw              = archConstantMap(magic, 232);
-            hw.architecture = hardware_t::architecture_t::gfx942;
-            hw.dpm_alpha    = 1.2622;
-            hw.dpm_beta     = 1.1630;
-            hw.dpm_gamma    = 0.4004;
+            hw                           = archConstantMap(magic, 232);
+            hw.architecture              = hardware_t::architecture_t::gfx942;
+            hw.dpm_alpha                 = 1.2622;
+            hw.dpm_beta                  = 1.1630;
+            hw.dpm_gamma                 = 0.4004;
+            hw.gsu_mb_launch_overhead_us = 20.6;
         }
         else if(arch == hardware_t::architecture_t::gfx1201)
         {
             unsigned char magic[232] = {0, 0, 0, 0, 0, 0, 224, 64, 0, 0, 0, 0, 0, 0, 96, 65, 0, 0, 0, 0, 0, 0, 144, 65, 0, 0, 0, 0, 0, 0, 96, 64, 0, 0, 0, 0, 0, 0, 96, 64, 0, 0, 0, 0, 0, 0, 96, 64, 0, 0, 0, 0, 0, 0, 96, 64, 0, 0, 0, 0, 0, 0, 80, 64, 0, 0, 0, 0, 0, 0, 96, 64, 0, 0, 0, 0, 0, 0, 228, 63, 0, 0, 0, 0, 0, 168, 147, 64, 20, 174, 71, 225, 122, 132, 78, 64, 104, 145, 237, 124, 63, 119, 123, 64, 0, 0, 0, 0, 0, 92, 162, 64, 0, 0, 0, 0, 0, 136, 163, 64, 51, 51, 51, 51, 51, 51, 45, 64, 205, 204, 204, 204, 204, 204, 44, 64, 0, 0, 0, 0, 0, 0, 160, 64, 0, 0, 0, 0, 0, 0, 80, 64, 0, 0, 0, 0, 0, 0, 64, 64, 205, 204, 204, 204, 204, 204, 236, 63, 0, 0, 0, 0, 0, 0, 232, 63, 1, 0, 0, 0, 14, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0, 6, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0};
-            hw              = archConstantMap(magic, 232);
-            hw.architecture = hardware_t::architecture_t::gfx1201;
-            hw.dpm_alpha    = 0.0;
-            hw.dpm_beta     = 0.0;
-            hw.dpm_gamma    = 0.0;
+            hw                           = archConstantMap(magic, 232);
+            hw.architecture              = hardware_t::architecture_t::gfx1201;
+            hw.dpm_alpha                 = 0.0;
+            hw.dpm_beta                  = 0.0;
+            hw.dpm_gamma                 = 0.0;
+            hw.gsu_mb_launch_overhead_us = 5.0;
         }
         else
         {
@@ -202,7 +205,8 @@ namespace origami
                 hw_consts.L1CacheLineSize, hw_consts.NumCUs, hw_consts.boost_frequency,
                 hw_consts.mem_frequency, hw_consts.L2WriteArbEff, hw_consts.L2ReadArbEff,
                 hw_consts.L3BandWidth, hw_consts.L1BusWidthPerCU, hw_consts.L2BusWidthPerCU,
-                hw_consts.L1WriteBusWidthPerCU, hw_consts.L2WriteBusWidthPerCU
+                hw_consts.L1WriteBusWidthPerCU, hw_consts.L2WriteBusWidthPerCU,
+                hw_consts.gsu_mb_launch_overhead_us
             );
         }
         else if(gsuMethod == 3 && GlobalSplitU > 1) //MBSK
@@ -680,6 +684,7 @@ namespace origami
         // Path 2 – L2 bandwidth throttle: high per-iteration L2 traffic saturates
         //          on-chip interconnect, reducing effective throughput.  Applied only
         //          to the loop fraction of total cost (where L2 pressure occurs).
+        // TODO: replace hard-coded coefficients with per-architecture constants
         {
             double cu_util = static_cast<double>(WGs_per_tile) / hw_consts.NumCUs;
             double f_core =

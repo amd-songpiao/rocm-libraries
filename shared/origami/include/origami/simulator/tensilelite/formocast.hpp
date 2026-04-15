@@ -78,7 +78,8 @@ namespace origami
                             double L1CacheLineSize, double NumCUs, double boost_frequency,
                             double mem_frequency, double L2WriteArbEff, double L2ReadArbEff,
                             double L3BandWidth, double L1BusWidthPerCU, double L2BusWidthPerCU,
-                            double L1WriteBusWidthPerCU, double L2WriteBusWidthPerCU);
+                            double L1WriteBusWidthPerCU, double L2WriteBusWidthPerCU,
+                            double gsu_mb_launch_overhead_us);
 
         /**
          * @brief Calculate overhead for multiple buffer single kernel (StreamK) Global Split K approach

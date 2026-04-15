@@ -68,6 +68,9 @@ try:
         compute_number_of_output_tiles,
         # Reduction functions
         int_to_reduction_t,
+        # Formocast feature extraction
+        extract_formocast_features,
+        formocast_feature_names,
     )
 except ImportError as e:
     raise ImportError(
@@ -136,6 +139,9 @@ __all__ = [
     "compute_number_of_output_tiles",
     # Reduction functions
     "int_to_reduction_t",
+    # Formocast feature extraction
+    "extract_formocast_features",
+    "formocast_feature_names",
 ]
 
 try:

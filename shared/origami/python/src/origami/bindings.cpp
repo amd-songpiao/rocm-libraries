@@ -428,4 +428,12 @@ NB_MODULE(origami, m) {
         return origami::compute_timestep_latency(problem, hardware, config, context);
       },
       "Compute latency per K-complete MT wave (auto-creates context)");
+
+  // Formocast feature extraction for ML-based ranking
+  m.def("extract_formocast_features",
+        &origami::extract_formocast_features,
+        "Extract Formocast intermediate features as a flat vector for ML training");
+  m.def("formocast_feature_names",
+        &origami::formocast_feature_names,
+        "Get ordered names of features returned by extract_formocast_features");
 }

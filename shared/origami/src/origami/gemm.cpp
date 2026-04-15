@@ -2002,4 +2002,76 @@ static double compute_formocast_latency(const problem_t& problem,
   return perf.microSeconds;
 }
 
+std::vector<std::string> formocast_feature_names() { return Formocast::featureNames(); }
+
+std::vector<double> extract_formocast_features(const problem_t& problem,
+                                               const hardware_t& hardware,
+                                               const config_t& config) {
+  Formocast formocast;
+
+  Formocast::ProblemInfo prob_info;
+  prob_info.M              = static_cast<double>(problem.size.m);
+  prob_info.N              = static_cast<double>(problem.size.n);
+  prob_info.K              = static_cast<double>(problem.size.k);
+  prob_info.NumBatches     = static_cast<double>(problem.batch);
+  prob_info.bpeA           = static_cast<uint32_t>(datatype_to_bits(problem.a_dtype) / 8);
+  prob_info.bpeB           = static_cast<uint32_t>(datatype_to_bits(problem.b_dtype) / 8);
+  prob_info.bpeD           = static_cast<uint32_t>(datatype_to_bits(problem.d_dtype) / 8);
+  prob_info.bpeCompute     = static_cast<uint32_t>(datatype_to_bits(problem.mi_dtype) / 8);
+  prob_info.transA         = (problem.a_transpose == transpose_t::T);
+  prob_info.transB         = (problem.b_transpose == transpose_t::T);
+  prob_info.swizzleTensorA = config.has_tensile_params() ? config.tensile().swizzle_a : false;
+  prob_info.swizzleTensorB = config.has_tensile_params() ? config.tensile().swizzle_b : false;
+  prob_info.dataType       = problem.mi_dtype;
+
+  Formocast::SizeMapping size_mapping;
+  size_mapping.macroTile[0]         = static_cast<int>(config.mt.m);
+  size_mapping.macroTile[1]         = static_cast<int>(config.mt.n);
+  size_mapping.macroTile[2]         = static_cast<int>(config.mt.k);
+  size_mapping.matrixInstruction[0] = static_cast<int>(config.mi.m);
+  size_mapping.matrixInstruction[1] = static_cast<int>(config.mi.n);
+  size_mapping.matrixInstruction[2] = static_cast<int>(config.mi.k);
+  size_mapping.matrixInstruction[3] = 1;
+
+  if (config.has_tensile_params()) {
+    const auto& tp                        = config.tensile();
+    size_mapping.depthU                   = (tp.depth_u > 0) ? tp.depth_u : config.mt.k;
+    size_mapping.globalSplitU             = tp.global_split_u;
+    size_mapping.globalAccumulation       = tp.global_accumulation;
+    size_mapping.LocalSplitU              = tp.local_split_u;
+    size_mapping.DirectToVgprA            = tp.direct_to_vgpr_a;
+    size_mapping.DirectToVgprB            = tp.direct_to_vgpr_b;
+    size_mapping.DirectToLdsA             = tp.direct_to_lds_a;
+    size_mapping.DirectToLdsB             = tp.direct_to_lds_b;
+    size_mapping.NumLoadsCoalescedA       = tp.num_loads_coalesced_a;
+    size_mapping.NumLoadsCoalescedB       = tp.num_loads_coalesced_b;
+    size_mapping.waveNum                  = tp.wave_num;
+    size_mapping.waveGroup[0]             = tp.wave_group_m;
+    size_mapping.waveGroup[1]             = tp.wave_group_n;
+    size_mapping.workGroupMappingXCC      = tp.workgroup_mapping_xcc;
+    size_mapping.workGroupMappingXCCGroup = tp.workgroup_mapping_xcc_group;
+    size_mapping.globalSplitUCoalesced    = tp.global_split_u_coalesced;
+    size_mapping.globalSplitUWorkGroupMappingRoundRobin = tp.global_split_u_wgm_round_robin;
+    size_mapping.PrefetchGlobalRead                     = tp.prefetch_global_read;
+    size_mapping.MathClocksUnrolledLoop                 = tp.math_clocks_unrolled_loop;
+  } else {
+    size_mapping.depthU = config.mt.k;
+  }
+
+  size_mapping.grvwA            = config.grvw_a;
+  size_mapping.grvwB            = config.grvw_b;
+  size_mapping.gwvwD            = config.gwvw_d;
+  size_mapping.gwvwC            = config.gwvw_d;
+  size_mapping.VectorWidthA     = config.vector_width_a;
+  size_mapping.VectorWidthB     = config.vector_width_b;
+  size_mapping.workGroupMapping = config.workgroup_mapping;
+  size_mapping.CUOccupancy      = config.occupancy;
+
+  formocast.setProblem(prob_info);
+  formocast.setSolution(size_mapping);
+  formocast.setHardware(hardware.arch);
+
+  return formocast.extractFeatures();
+}
+
 }  // namespace origami

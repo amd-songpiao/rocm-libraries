@@ -500,4 +500,26 @@ double compute_total_latency(const problem_t& problem,
                              const config_t& config,
                              size_t max_cus);
 
+/**
+ * @brief Extract Formocast intermediate features for a (problem, config) pair.
+ *
+ * Runs the Formocast simulation pipeline and returns a flat feature vector
+ * containing physics-informed metrics (cache hit rates, memory costs, compute
+ * costs, overheads). Useful for training ML-based ranking models.
+ *
+ * @param problem Problem description (M, N, K, etc.)
+ * @param hardware Hardware characteristics
+ * @param config Kernel configuration (must have tensile params)
+ * @return std::vector<double> Feature vector, or empty vector if config is invalid
+ */
+std::vector<double> extract_formocast_features(const problem_t& problem,
+                                               const hardware_t& hardware,
+                                               const config_t& config);
+
+/**
+ * @brief Get the names of features returned by extract_formocast_features(), in order.
+ * @return std::vector<std::string> Feature names
+ */
+std::vector<std::string> formocast_feature_names();
+
 }  // namespace origami

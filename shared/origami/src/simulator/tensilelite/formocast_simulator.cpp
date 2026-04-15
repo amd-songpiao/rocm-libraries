@@ -663,6 +663,18 @@ namespace origami
         perfInfo.mt0 = MT0;
         perfInfo.mt1 = MT1;
         perfInfo.du = depthU;
+        perfInfo.cu_utilization = static_cast<double>(WGs_per_tile) / hw_consts.NumCUs;
+        perfInfo.num_tiles_per_cu = static_cast<double>(num_tiles);
+        perfInfo.loopCnt = static_cast<double>(loopCnt);
+        {
+            uint32_t full_m = static_cast<uint32_t>(M) / static_cast<uint32_t>(MT0);
+            uint32_t full_n = static_cast<uint32_t>(N) / static_cast<uint32_t>(MT1);
+            double full_wgs = static_cast<double>(full_m) * full_n;
+            double total_wgs = static_cast<double>(M_WGs_total) * N_WGs_total;
+            perfInfo.edge_percentage = (total_wgs > 0) ? 1.0 - full_wgs / total_wgs : 0.0;
+        }
+        perfInfo.compute_bound_ratio = math_overall / std::max(mem_costs.mem_overall, 1e-12);
+        perfInfo.occupancy = static_cast<double>(CUOccupancy);
 
         return pp;
     }
@@ -847,5 +859,69 @@ namespace origami
         result.ratioA = simulator::analyzeBankConflictsFromVGPR(vgprState, vgprLocalReadAddrA, NUM_THREADS_TO_SIMULATE, NUM_BANKS, BANK_WIDTH, LocalReadBytesA);
         result.ratioB = simulator::analyzeBankConflictsFromVGPR(vgprState, vgprLocalReadAddrB, NUM_THREADS_TO_SIMULATE, NUM_BANKS, BANK_WIDTH, LocalReadBytesB);
         return result;
+    }
+
+    std::vector<std::string> Formocast::featureNames() {
+        return {"mem_l1",
+                "mem_l2",
+                "mem_l3",
+                "mem_hbm",
+                "l1_hit_rate",
+                "l2_hit_rate",
+                "l3_hit_rate",
+                "mem_overall",
+                "A_L1_req",
+                "B_L1_req",
+                "A_L2_req",
+                "B_L2_req",
+                "preloop",
+                "loop",
+                "tail",
+                "store",
+                "gsu",
+                "lsu",
+                "math",
+                "cu_utilization",
+                "num_tiles_per_cu",
+                "loop_cnt",
+                "edge_percentage",
+                "compute_bound_ratio",
+                "occupancy",
+                "lds_bc_a",
+                "lds_bc_b"};
+    }
+
+    std::vector<double> Formocast::extractFeatures() const {
+        auto pp = predictedPerformance();
+
+        if (pp.microSeconds >= 9999999.0) { return {}; }
+
+        return {perfInfo.memory.mem_l1,
+                perfInfo.memory.mem_l2,
+                perfInfo.memory.mem_l3,
+                perfInfo.memory.mem_hbm,
+                perfInfo.memory.l1_hit,
+                perfInfo.memory.l2_hit,
+                perfInfo.memory.l3_hit,
+                perfInfo.memory.mem_overall,
+                perfInfo.memory.A_L1_req,
+                perfInfo.memory.B_L1_req,
+                perfInfo.memory.A_L2_req,
+                perfInfo.memory.B_L2_req,
+                perfInfo.preloop,
+                perfInfo.loop,
+                perfInfo.tail,
+                perfInfo.store,
+                perfInfo.gsu,
+                perfInfo.lsu,
+                perfInfo.math,
+                perfInfo.cu_utilization,
+                perfInfo.num_tiles_per_cu,
+                perfInfo.loopCnt,
+                perfInfo.edge_percentage,
+                perfInfo.compute_bound_ratio,
+                perfInfo.occupancy,
+                perfInfo.lds_bank_conflict_a,
+                perfInfo.lds_bank_conflict_b};
     }
 } // namespace origami

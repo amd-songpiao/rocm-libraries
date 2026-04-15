@@ -259,6 +259,14 @@ namespace origami
             double mt1;
             uint32_t du;
             int    svw;
+            double cu_utilization      = 0.0;
+            double num_tiles_per_cu    = 0.0;
+            double loopCnt             = 0.0;
+            double edge_percentage     = 0.0;
+            double compute_bound_ratio = 0.0;
+            double occupancy           = 0.0;
+            double lds_bank_conflict_a = 1.0;
+            double lds_bank_conflict_b = 1.0;
 
             // for == compare, can remove this if we are using MinTieBreakerInfo
             bool operator==(TieBreakerInfo const &rhs) const
@@ -621,6 +629,19 @@ namespace origami
          * @return MinTieBreakerInfo structure with essential parameters
          */
         MinTieBreakerInfo getMinTieBreakerInfo() const;
+
+        /**
+         * @brief Extract a flat feature vector from Formocast's physics-informed
+         * intermediate results, suitable for ML-based ranking models.
+         * @return std::vector<double> Feature vector (empty if config is invalid)
+         */
+        std::vector<double> extractFeatures() const;
+
+        /**
+         * @brief Get the names of features returned by extractFeatures(), in order.
+         * @return std::vector<std::string> Feature names
+         */
+        static std::vector<std::string> featureNames();
 
         /**
          * @brief Check if local read FIFO is full considering bank conflicts

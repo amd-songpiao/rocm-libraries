@@ -129,6 +129,8 @@ NB_MODULE(origami, m) {
       .def_rw("wave_group_n", &origami::tensile_params_t::wave_group_n)
       .def_rw("prefetch_global_read", &origami::tensile_params_t::prefetch_global_read)
       .def_rw("math_clocks_unrolled_loop", &origami::tensile_params_t::math_clocks_unrolled_loop)
+      .def_rw("non_temporal_a", &origami::tensile_params_t::non_temporal_a)
+      .def_rw("non_temporal_b", &origami::tensile_params_t::non_temporal_b)
       .def_rw("swizzle_a", &origami::tensile_params_t::swizzle_a)
       .def_rw("swizzle_b", &origami::tensile_params_t::swizzle_b)
       .def_rw("workgroup_mapping_xcc", &origami::tensile_params_t::workgroup_mapping_xcc)

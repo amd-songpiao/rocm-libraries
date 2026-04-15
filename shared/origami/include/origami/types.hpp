@@ -404,6 +404,10 @@ struct tensile_params_t {
   /// Math clocks per unrolled loop iteration (0 = auto-calculate)
   int math_clocks_unrolled_loop = 0;
 
+  /// Non-temporal hints for cache bypass
+  int non_temporal_a = 0;
+  int non_temporal_b = 0;
+
   /// Swizzled memory layout flags
   bool swizzle_a = false;
   bool swizzle_b = false;
@@ -423,7 +427,9 @@ struct tensile_params_t {
            num_loads_coalesced_b == o.num_loads_coalesced_b && wave_num == o.wave_num &&
            wave_group_m == o.wave_group_m && wave_group_n == o.wave_group_n &&
            prefetch_global_read == o.prefetch_global_read &&
-           math_clocks_unrolled_loop == o.math_clocks_unrolled_loop && swizzle_a == o.swizzle_a &&
+           math_clocks_unrolled_loop == o.math_clocks_unrolled_loop &&
+           non_temporal_a == o.non_temporal_a && non_temporal_b == o.non_temporal_b &&
+           swizzle_a == o.swizzle_a &&
            swizzle_b == o.swizzle_b && workgroup_mapping_xcc == o.workgroup_mapping_xcc &&
            workgroup_mapping_xcc_group == o.workgroup_mapping_xcc_group &&
            global_split_u_coalesced == o.global_split_u_coalesced &&

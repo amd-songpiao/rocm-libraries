@@ -503,7 +503,7 @@ namespace origami
         CacheHitRates cache_hits;
         L1CacheHitRate l1 = computeL1CacheHitRate(hw_consts,
                                                 MT0, MT1, bpeA, bpeB,
-                                                0, 0, GRVWA, GRVWB,
+                                                sizeMapping.NTA, sizeMapping.NTB, GRVWA, GRVWB,
                                                 DTVA, DTVB, isSwizzleA, isSwizzleB,
                                                 VWA, VWB, transA, transB,
                                                 M, N, NLCA, NLCB,
@@ -517,11 +517,11 @@ namespace origami
                                                 NumBatches,
                                                 bpeA,
                                                 bpeB,
-                                                0,
-                                                0,
+                                                sizeMapping.NTA,
+                                                sizeMapping.NTB,
                                                 isGSUWGMRR);
         L3CacheHitRate l3 = computeL3CacheHitRate(M, N, K, hw_consts,
-                                                bpeA, bpeB, 0, 0,
+                                                bpeA, bpeB, sizeMapping.NTA, sizeMapping.NTB,
                                                 N_WGs_total, M_WGs_total, N_WGs_per_tile, M_WGs_per_tile);
 
         cache_hits.A_L1_hit = l1.tile0HitRate;

@@ -77,6 +77,9 @@ namespace origami
 
             bool DirectToLdsA = false;
             bool DirectToLdsB = false;
+
+            int NTA = 0;
+            int NTB = 0;
         };
 
         /**

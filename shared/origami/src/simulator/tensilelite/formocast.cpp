@@ -146,7 +146,7 @@ namespace origami
             double D_L1_clk = write_l1_req/WGs * 64 / L1WriteBusWidthPerCU;
             double D_L2_clk = write_l2_req/WGs * 64 / std::min(L2WriteBusWidthPerCU, L2WriteBandWidthPerCU_local);
             double D_L3_clk = write_l3_req/WGs * 64 / L3BandWidthPerCU_local;
-            double D_hbm_clk = 0 * 64 / HBMBandWidthPerCU_local;
+            double D_hbm_clk = write_l3_req/WGs * 64 / HBMBandWidthPerCU_local;
             double store = std::max(D_L1_clk/cu_freq, std::max(D_L2_clk/cu_freq, std::max(D_L3_clk/hbm_freq, D_hbm_clk/hbm_freq)));
 
             return GSU_mem_overall + store;
